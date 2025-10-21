@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kalkulator Investasi + BTC DCA — Premium Dark Green</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script defer src="./script.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true">💹</div>
+        <div>
+          <div class="title">Kalkulator Investasi</div>
+          <div class="subtitle">+ BTC Live & DCA • Aura hijau • Premium dark</div>
+        </div>
+      </div>
+      <div class="chip" title="Data tersimpan otomatis di perangkat ini (localStorage)">Auto-Save Lokal</div>
+    </header>
+
+    <!-- ============ BTC LIVE & DCA ============ -->
+    <section class="card" aria-labelledby="btcTitle">
+      <div class="head">
+        <h3 id="btcTitle">Bitcoin (BTC) — Live & DCA</h3>
+        <div class="actions">
+          <span class="muted" id="btcUpdated">—</span>
+        </div>
+      </div>
+      <div class="body">
+        <div class="btc-grid">
+          <div class="btc-live">
+            <div class="price-line">
+              <div>
+                <div class="label">Harga Saat Ini (Spot)</div>
+                <div class="btc-price" id="btcPrice">—</div>
+                <div class="btc-sub">
+                  <span id="btcChange">—</span> • <span id="btcPair">BTC-USD</span> •
+                  <span id="btcChangeDur" class="muted">Δ durasi: —</span>
+                </div>
+              </div>
+              <div class="btc-badge" id="btcPulse">LIVE</div>
+            </div>
+            <div class="hint">Sumber: CoinGecko (spot & 24h change + histori). Coinbase dipakai sebagai fallback USD.</div>
+            <div class="chart-wrap small">
+              <canvas id="btcSpark"></canvas>
+            </div>
+          </div>
+
+          <div class="btc-controls">
+            <div class="row">
+              <div>
+                <label for="dcaAmount">Nominal Setoran</label>
+                <input id="dcaAmount" type="text" inputmode="numeric" placeholder="0" value="0" />
+                <div class="hint">Jumlah per setoran (berdasarkan frekuensi). Jika <b>sekali</b>, disetor di awal saja.</div>
+              </div>
+              <div>
+                <label for="dcaCurrency">Mata Uang</label>
+                <select id="dcaCurrency">
+                  <option value="USD" selected>USD</option>
+                  <option value="IDR">IDR</option>
+                </select>
+                <div class="hint">Untuk USD/IDR, data dari CoinGecko. Bila rate-limit, isi Demo API Key (opsional).</div>
+              </div>
+            </div>
+
+            <div class="row-3">
+              <div>
+                <label>Durasi (pilih satu)</label>
+                <div class="pillset" id="durasiSet">
+                  <button class="pill active" data-years="1">1y</button>
+                  <button class="pill" data-years="3">3y</button>
+                  <button class="pill" data-years="5">5y</button>
+                  <button class="pill" data-years="10">10y</button>
+                </div>
+                <div class="hint">Grafik & persentase berubah mengikuti durasi yang dipilih.</div>
+              </div>
+              <div class="full">
+                <label>Frekuensi (pilih satu)</label>
+                <div class="pillset" id="freqSet">
+                  <button class="pill" data-freq="sekali">Sekali</button>
+                  <button class="pill" data-freq="mingguan">Mingguan</button>
+                  <button class="pill active" data-freq="bulanan">Bulanan</button>
+                  <button class="pill" data-freq="semesteran">Semester</button>
+                  <button class="pill" data-freq="tahunan">Tahunan</button>
+                </div>
+                <div class="hint">Diperhitungkan sejak awal durasi hingga sekarang.</div>
+              </div>
+              <div class="full">
+                <label for="coingeckoKey">CoinGecko Demo API Key (opsional)</label>
+                <input id="coingeckoKey" type="text" placeholder="x-cg-demo-api-key (opsional)" />
+                <div class="hint">Jika tanpa key gagal karena rate-limit, isi demo key dari CoinGecko.</div>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button id="btnHitung">Hitung</button>
+              <button id="btnExport" class="secondary">Export CSV</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="btc-out">
+          <section class="card inner" aria-labelledby="btcChartTitle">
+            <div class="head"><h3 id="btcChartTitle">Grafik — Harga vs Nilai Portofolio</h3><span class="muted">Grafik menyesuaikan durasi terpilih</span></div>
+            <div class="body">
+              <div class="chart-wrap">
+                <canvas id="btcChart"></canvas>
+              </div>
+            </div>
+          </section>
+
+          <section class="card inner" aria-labelledby="sumTitle">
+            <div class="head"><h3 id="sumTitle">Ringkasan Skenario Terpilih</h3></div>
+            <div class="body">
+              <div class="summary">
+                <div class="item">
+                  <div class="label">Total Setoran</div>
+                  <div class="value" id="sumInvest">—</div>
+                  <div class="small" id="sumTimes">—</div>
+                </div>
+                <div class="item">
+                  <div class="label">BTC Terkumpul</div>
+                  <div class="value" id="sumBTC">—</div>
+                  <div class="small">Jumlah unit</div>
+                </div>
+                <div class="item">
+                  <div class="label">Nilai Akhir (Now)</div>
+                  <div class="value" id="sumValue">—</div>
+                  <div class="small">Mark-to-market</div>
+                </div>
+                <div class="item">
+                  <div class="label">ROI</div>
+                  <div class="value" id="sumROI">—</div>
+                  <div class="small" id="sumMeta">Durasi • Frekuensi</div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</body>
+</html>
