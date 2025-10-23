@@ -24,7 +24,6 @@
       <div class="chip" title="Data tersimpan otomatis di perangkat ini (localStorage)">Auto-Save Lokal</div>
     </header>
 
-    <!-- ============ BTC LIVE & DCA ============ -->
     <section class="card" aria-labelledby="btcTitle">
       <div class="head">
         <h3 id="btcTitle">Bitcoin (BTC) — Live & DCA</h3>
@@ -41,12 +40,12 @@
                 <div class="btc-price" id="btcPrice">—</div>
                 <div class="btc-sub">
                   <span id="btcChange">—</span> • <span id="btcPair">BTC-USD</span> •
-                  <span id="btcChangeDur" class="muted">Δ durasi: —</span>
+                  <span id="btcChangeDur" class="muted">Δ 1y: —</span>
                 </div>
+                <div class="hint" id="dataSource">Sumber: CoinGecko (spot & 24h change + histori). Coinbase dipakai sebagai fallback USD.</div>
               </div>
               <div class="btc-badge" id="btcPulse">LIVE</div>
             </div>
-            <div class="hint">Sumber: CoinGecko (spot & 24h change + histori). Coinbase dipakai sebagai fallback USD.</div>
             <div class="chart-wrap small">
               <canvas id="btcSpark"></canvas>
             </div>
