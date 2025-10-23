@@ -11,7 +11,7 @@
   --ok:#a0ffcf;
   --card-radius:20px;
   --space:18px;
-  --shadow:0 10px 30px rgba(0,0,0,.35), inset 0 1px rgba(255,255,255,.02);
+  --shadow:0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.02);
 }
 
 *{box-sizing:border-box}
@@ -88,7 +88,11 @@ input:focus, select:focus{
 
 .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.7);border:1px solid var(--stroke);color:var(--text);padding:10px 14px;border-radius:12px;backdrop-filter:blur(10px);display:none;z-index:9}
 
-.muted{color:var(--muted)}
+.muted{color:#b6c4bb}
+#btcChange.pos{color:#aaf1c4} 
+#btcChange.neg{color:#ff9aa5}
+#btcChangeDur.pos{color:#aaf1c4}
+#btcChangeDur.neg{color:#ff9aa5}
 
 .chart-wrap{
   width:100%;
@@ -102,10 +106,6 @@ input:focus, select:focus{
 
 .btc-live .btc-price{font-size:32px;font-weight:800;margin:4px 0}
 .btc-live .btc-sub{font-size:12px}
-#btcChange.pos{color:#aaf1c4} 
-#btcChange.neg{color:#ff9aa5}
-#btcChangeDur.pos{color:#aaf1c4}
-#btcChangeDur.neg{color:#ff9aa5}
 
 .btc-badge{background:rgba(46,204,113,.2);border:1px solid rgba(46,204,113,.4);color:#baf5d7;padding:6px 10px;border-radius:999px;font-size:12px;height:fit-content}
 .price-line{display:flex;align-items:center;justify-content:space-between}
