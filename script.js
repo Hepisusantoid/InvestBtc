@@ -1,4 +1,4 @@
-/* ========== BTC Live + DCA (v4, single-select) ========== */
+/* ========== BTC Live + DCA (v4.1, robust) ========== */
 
 const qs = s => document.querySelector(s);
 const qsa = s => Array.from(document.querySelectorAll(s));
@@ -27,8 +27,8 @@ function maskThousandsInput(el){
 }
 ['dcaAmount'].forEach(id => {
   const el = document.getElementById(id);
-  el.addEventListener('input', ()=> maskThousandsInput(el));
-  el.addEventListener('blur', ()=> maskThousandsInput(el));
+  el.addEventListener('input', ()=> { maskThousandsInput(el); runSingleDCA(false); });
+  el.addEventListener('blur', ()=> { maskThousandsInput(el); runSingleDCA(false); });
 });
 
 function yearsAgo(n){
@@ -125,7 +125,6 @@ function updateMainPriceSeries(series){
 }
 function plotPortfolioSeries(series){
   const ch = ensureMain();
-  // Make labels match price series length; assume we already updated price series
   ch.data.datasets[1].data = series.map(p=> p[1]);
   ch.update();
 }
@@ -214,6 +213,7 @@ let currentSlice = []; // current duration slice
 async function refreshLive(){
   const key = qs('#coingeckoKey').value.trim() || null;
   const currency = getCurrency().toLowerCase();
+  const dataSource = qs('#dataSource');
   try{
     const {price, changePct} = await getCGSimple(currency, key);
     const fmtMoney = currency==='usd' ? fmtUSD : fmtIDR;
@@ -225,17 +225,22 @@ async function refreshLive(){
     chgEl.classList.add(chg>=0? 'pos':'neg');
     qs('#btcPair').textContent = `BTC-${currency.toUpperCase()}`;
     qs('#btcUpdated').textContent = new Date().toLocaleString('id-ID', {hour12:false});
+    dataSource.textContent = 'Sumber: CoinGecko (live & histori)';
   }catch(e){
     try{
       const usd = await getCoinbaseSpotUSD();
       qs('#btcPrice').textContent = fmtUSD.format(usd);
       qs('#btcChange').textContent = 'Spot (fallback Coinbase)';
       qs('#btcPair').textContent = 'BTC-USD';
+      dataSource.textContent = 'Sumber: Coinbase (fallback USD) + CoinGecko untuk histori';
     }catch{
       qs('#btcPrice').textContent = 'Gagal memuat';
+      dataSource.textContent = 'Sumber gagal. Coba isi Demo API Key CoinGecko.';
     }
   }
+  await updateDurationChange();
 }
+
 async function ensureHistory(currency){
   const key = qs('#coingeckoKey').value.trim() || null;
   if(cacheHist[currency]) return cacheHist[currency];
@@ -243,6 +248,7 @@ async function ensureHistory(currency){
   cacheHist[currency] = hist.sort((a,b)=>a[0]-b[0]);
   return cacheHist[currency];
 }
+
 async function initSpark(){
   const key = qs('#coingeckoKey').value.trim() || null;
   try{
@@ -251,29 +257,36 @@ async function initSpark(){
   }catch(e){/* ignore */}
 }
 
-// ========== Duration Change ==========
+// ========== Duration Change & Events ==========
+async function updateDurationChange(){
+  const years = getSelectedYears();
+  const currency = getCurrency();
+  try{
+    const hist = await ensureHistory(currency);
+    const slice = sliceByYears(hist, years);
+    const first = slice[0]?.[1];
+    const last = slice[slice.length-1]?.[1];
+    const durPct = (first && last) ? ((last/first-1)*100) : 0;
+    const el = qs('#btcChangeDur');
+    el.textContent = `Δ ${years}y: ${(durPct>=0?'+':'') + durPct.toFixed(2)}%`;
+    el.classList.remove('pos','neg'); el.classList.add(durPct>=0?'pos':'neg');
+  }catch{
+    const el = qs('#btcChangeDur');
+    el.textContent = `Δ ${years}y: —`;
+    el.classList.remove('pos','neg');
+  }
+}
+
 async function onDurationChange(){
   const years = getSelectedYears();
   const currency = getCurrency();
   const hist = await ensureHistory(currency);
   currentSlice = sliceByYears(hist, years);
   updateMainPriceSeries(currentSlice);
-
-  // Update duration change %
-  const first = currentSlice[0]?.[1];
-  const last = currentSlice[currentSlice.length-1]?.[1];
-  const durPct = (first && last) ? ((last/first-1)*100) : 0;
-  const el = qs('#btcChangeDur');
-  el.textContent = `Δ ${years}y: ${(durPct>=0?'+':'') + durPct.toFixed(2)}%`;
-  el.classList.remove('pos','neg'); el.classList.add(durPct>=0?'pos':'neg');
-
-  // If we already computed scenario, re-run to align chart
+  await updateDurationChange();
   runSingleDCA(false);
 }
-function onFreqChange(){
-  // Optionally auto-run
-  runSingleDCA(false);
-}
+function onFreqChange(){ runSingleDCA(false); }
 
 // ========== Compute Single Scenario ==========
 async function runSingleDCA(showToastMsg=true){
@@ -283,7 +296,6 @@ async function runSingleDCA(showToastMsg=true){
   currentSlice = sliceByYears(hist, years);
   if(currentSlice.length===0){ showToast('History kosong'); return; }
 
-  // Current price
   let current;
   try{
     const {price} = await getCGSimple(currency.toLowerCase(), qs('#coingeckoKey').value.trim() || null);
@@ -296,17 +308,14 @@ async function runSingleDCA(showToastMsg=true){
   const amount = unformatNum(qs('#dcaAmount').value);
   const freq = getSelectedFreq();
 
-  // Schedule
   const startMs = currentSlice[0][0];
   const endMs = currentSlice[currentSlice.length-1][0];
   const schedule = pickSchedule(startMs, endMs, freq);
 
-  // Compute
   const res = buildPortfolioSeries(currentSlice, schedule, amount, current);
   updateMainPriceSeries(currentSlice);
   plotPortfolioSeries(res.series);
 
-  // Summary
   qs('#sumInvest').textContent = fmtMoney.format(res.totalInvested);
   qs('#sumTimes').textContent = `${res.times}x setoran ${freq}`;
   qs('#sumBTC').textContent = `${res.totalBTC.toFixed(6)} BTC`;
@@ -314,7 +323,6 @@ async function runSingleDCA(showToastMsg=true){
   qs('#sumROI').textContent = fmtPct.format(res.roi);
   qs('#sumMeta').textContent = `${years}y • ${freq}`;
 
-  // Store last for export
   window.__lastSingle = { years, freq, amount, invested:res.totalInvested, btc:res.totalBTC, value:res.finalValue, roi:res.roi, currency, series:res.series };
 
   if(showToastMsg) showToast('Selesai dihitung.');
@@ -336,18 +344,23 @@ function exportSingle(){
 }
 
 // ========== Wire-up ==========
-makeSingleSelect('#durasiSet', 'years');
-makeSingleSelect('#freqSet', 'freq');
+function makeSingleSelectWires(){
+  makeSingleSelect('#durasiSet', 'years');
+  makeSingleSelect('#freqSet', 'freq');
+}
+makeSingleSelectWires();
 
 document.getElementById('btnHitung').addEventListener('click', ()=> runSingleDCA(true));
 document.getElementById('btnExport').addEventListener('click', exportSingle);
 document.getElementById('dcaCurrency').addEventListener('change', async ()=>{
+  cacheHist['USD']=undefined; cacheHist['IDR']=undefined;
   await refreshLive();
   await onDurationChange();
 });
-document.getElementById('dcaAmount').addEventListener('change', ()=> runSingleDCA(false));
 
 // Init
 refreshLive(); setInterval(refreshLive, 30000);
-initSpark();
-onDurationChange(); // initial slice + dur %
+(async ()=>{
+  await initSpark();
+  await onDurationChange();
+})();
